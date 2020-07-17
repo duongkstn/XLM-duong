@@ -7,7 +7,8 @@ import os
 import re
 import string
 en_chars = set(string.ascii_lowercase)
-
+en_chars_num = set(string.ascii_lowercase + string.digits)
+square_character = [92432, 78855, 159655]
 title = 'product_title'
 root = os.path.dirname(os.path.abspath(__file__))
 file_en = os.path.join(root, 'en', 'train_en.csv')
@@ -35,9 +36,10 @@ def clean(x, lg):
     x = remove_emoji(x).replace('\\n', ' ')
     if lg == 'zh':
         x = ''.join(x for x in jieba.cut(x, cut_all=False))
-    x = ''.join([t if (t.isalpha() or t == ' ') else ' ' for t in x])
+    x = ''.join([t if (t.isalpha() or t.isdigit() or t == ' ') else ' ' for t in x])
+    x = ''.join([t if (ord(t) not in square_character) else ' ' for t in x])
     l = x.split()
-    x = [t for t in l if (len(set(t) - en_chars) > 0 or len(t) > 1) ] #remove alon english character
+    x = [t for t in l if (len(set(t) - en_chars_num) > 0 or len(t) > 1) ] #remove alon english character
     x = ' '.join(x)
     x = x.strip()
     return x
