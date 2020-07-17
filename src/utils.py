@@ -125,8 +125,8 @@ def to_cuda(*args):
     """
     Move tensors to CUDA.
     """
-    # return [None if x is None else x.cuda() for x in args]
-    return [None if x is None else x for x in args]
+    return [None if x is None else x.cuda() for x in args]
+    # return [None if x is None else x for x in args]
 
 def restore_segmentation(path):
     """

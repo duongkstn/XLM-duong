@@ -67,13 +67,13 @@ class XNLI:
 
         # embedder
         self.embedder = copy.deepcopy(self._embedder)
-        self.embedder#.cuda()
+        self.embedder.cuda()
 
         # projection layer
         self.proj = nn.Sequential(*[
             nn.Dropout(params.dropout),
             nn.Linear(self.embedder.out_dim, 3)
-        ])#.cuda()
+        ]).cuda()
 
         # optimizers
         self.optimizer_e = get_optimizer(list(self.embedder.get_parameters(params.finetune_layers)), params.optimizer_e)

@@ -72,7 +72,7 @@ class SentenceEmbedder(object):
         self.model.eval()
 
     def cuda(self):
-        self.model#.cuda()
+        self.model.cuda()
 
     def get_parameters(self, layer_range):
 

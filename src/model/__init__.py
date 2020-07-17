@@ -100,8 +100,8 @@ def set_pretrain_emb(model, dico, word2id, embeddings):
             if idx is None:
                 continue
             n_found += 1
-            model.embeddings.weight[i] = embeddings[idx]#.cuda()
-            model.pred_layer.proj.weight[i] = embeddings[idx]#.cuda()
+            model.embeddings.weight[i] = embeddings[idx].cuda()
+            model.pred_layer.proj.weight[i] = embeddings[idx].cuda()
     logger.info("Pretrained %i/%i words (%.3f%%)."
                 % (n_found, len(dico), 100. * n_found / len(dico)))
 
@@ -187,5 +187,5 @@ def build_model(params, dico):
         logger.info("Number of parameters (encoder): %i" % sum([p.numel() for p in encoder.parameters() if p.requires_grad]))
         logger.info("Number of parameters (decoder): %i" % sum([p.numel() for p in decoder.parameters() if p.requires_grad]))
 
-        # return encoder.cuda(), decoder.cuda()
-        return encoder, decoder
+        return encoder.cuda(), decoder.cuda()
+        # return encoder, decoder

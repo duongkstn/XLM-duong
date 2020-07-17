@@ -86,13 +86,13 @@ class GLUE:
 
         # embedder
         self.embedder = copy.deepcopy(self._embedder)
-        self.embedder#.cuda()
+        self.embedder.cuda()
 
         # projection layer
         self.proj = nn.Sequential(*[
             nn.Dropout(params.dropout),
             nn.Linear(self.embedder.out_dim, params.out_features)
-        ])#.cuda()
+        ]).cuda()
 
         # optimizers
         self.optimizer_e = get_optimizer(list(self.embedder.get_parameters(params.finetune_layers)), params.optimizer_e)
@@ -318,7 +318,7 @@ class GLUE:
             weights = torch.FloatTensor([
                 1.0 / (data['train']['y'] == i).sum().item()
                 for i in range(len(lab2id))
-            ])#.cuda()
+            ]).cuda()
             self.weights = weights / weights.sum()
         else:
             self.weights = None

@@ -73,10 +73,10 @@ def main(params):
 
     # build dictionary / build encoder / build decoder / reload weights
     dico = Dictionary(reloaded['dico_id2word'], reloaded['dico_word2id'], reloaded['dico_counts'])
-    # encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).cuda().eval()
-    # decoder = TransformerModel(model_params, dico, is_encoder=False, with_output=True).cuda().eval()
-    encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).eval()
-    decoder = TransformerModel(model_params, dico, is_encoder=False, with_output=True).eval()
+    encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).cuda().eval()
+    decoder = TransformerModel(model_params, dico, is_encoder=False, with_output=True).cuda().eval()
+    # encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).eval()
+    # decoder = TransformerModel(model_params, dico, is_encoder=False, with_output=True).eval()
     encoder.load_state_dict(reloaded['encoder'])
     decoder.load_state_dict(reloaded['decoder'])
     params.src_id = model_params.lang2id[params.src_lang]
@@ -106,12 +106,12 @@ def main(params):
         langs = batch.clone().fill_(params.src_id)
 
         # encode source batch and translate it
-        # encoded = encoder('fwd', x=batch.cuda(), lengths=lengths.cuda(), langs=langs.cuda(), causal=False)
-        encoded = encoder('fwd', x=batch, lengths=lengths, langs=langs, causal=False)
+        encoded = encoder('fwd', x=batch.cuda(), lengths=lengths.cuda(), langs=langs.cuda(), causal=False)
+        # encoded = encoder('fwd', x=batch, lengths=lengths, langs=langs, causal=False)
         encoded = encoded.transpose(0, 1)
-        # decoded, dec_lengths = decoder.generate(encoded, lengths.cuda(), params.tgt_id, max_len=int(1.5 * lengths.max().item() + 10))
-        decoded, dec_lengths = decoder.generate(encoded, lengths, params.tgt_id,
-                                                max_len=int(1.5 * lengths.max().item() + 10))
+        decoded, dec_lengths = decoder.generate(encoded, lengths.cuda(), params.tgt_id, max_len=int(1.5 * lengths.max().item() + 10))
+        # decoded, dec_lengths = decoder.generate(encoded, lengths, params.tgt_id,
+        #                                         max_len=int(1.5 * lengths.max().item() + 10))
 
         # convert sentences to words
         for j in range(decoded.size(1)):
