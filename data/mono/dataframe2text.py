@@ -30,16 +30,23 @@ def remove_emoji(text):
     return emoji_pattern.sub(r'', text)
 
 
+def hasNumbers(inputString):
+    return any(char.isdigit() for char in inputString)
+
+
 def clean(x, lg):
     x = x.lower().strip()
     x = unicodedata.normalize('NFKC', x)
     x = remove_emoji(x).replace('\\n', ' ')
     if lg == 'zh':
         x = ''.join(x for x in jieba.cut(x, cut_all=False))
+        x = re.sub(r'[a-z0-9]', ' ', x) #remove all en words
     x = ''.join([t if (t.isalpha() or t.isdigit() or t == ' ') else ' ' for t in x])
     x = ''.join([t if (ord(t) not in square_character) else ' ' for t in x])
     l = x.split()
-    x = [t for t in l if (len(set(t) - en_chars_num) > 0 or len(t) > 1) ] #remove alon english character
+    x = [t for t in l if (len(set(t) - en_chars_num) > 0 or len(t) > 1)] #remove alone english character
+    if lg == 'en':
+        x = [t for t in x if not hasNumbers(t)] #remove words have number (a7/ a75) instead of remove non-english words.
     x = ' '.join(x)
     x = x.strip()
     return x

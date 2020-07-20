@@ -32,6 +32,8 @@ def remove_emoji(text):
 
     return emoji_pattern.sub(r'', text)
 
+def hasNumbers(inputString):
+    return any(char.isdigit() for char in inputString)
 
 def clean(x, lg):
     x = x.lower().strip()
@@ -39,10 +41,13 @@ def clean(x, lg):
     x = remove_emoji(x).replace('\\n', ' ')
     if lg == 'zh':
         x = ''.join(x for x in jieba.cut(x, cut_all=False))
+        x = re.sub(r'[0-9]', ' ', x)  # remove all en words, do not delete a-z words since they will be deleted later
     x = ''.join([t if (t.isalpha() or t.isdigit() or t == ' ') else ' ' for t in x])
     x = ''.join([t if (ord(t) not in square_character) else ' ' for t in x])
     l = x.split()
     x = [t for t in l if (len(set(t) - en_chars_num) > 0 or len(t) > 1)] #remove alon english character
+    if lg == 'en':
+        x = [t for t in x if not hasNumbers(t)] #remove words have number (a7/ a75) instead of remove non-english words.
     x = ' '.join(x)
     x = x.strip()
     return x
@@ -68,6 +73,28 @@ df.drop_duplicates(inplace=True)
 df = df.replace('', np.nan)
 df.dropna(inplace=True)
 print('len df second time', len(df))
+
+
+def get_mutual(x):
+    x = list(set([t for t in re.findall(r'[a-z0-9]*', x) if t != '']))
+    return ' '.join(x)
+
+
+def remove_mutual(r):
+    mutual = r['en_mutual'].split()
+    x = r['translation_output'].split()
+    x = [t for t in x if t not in mutual]
+    return ' '.join(x)
+
+
+df['en_mutual'] = df['text'].apply(lambda x: get_mutual(x))
+df['text'] = df['text'].apply(lambda x: ' '.join([t.strip() for t in re.split(r'[a-z0-9]', x) if t.strip() != '']))
+df['translation_output'] = df.apply(lambda x: remove_mutual(x), axis=1)
+print(df[df.duplicated()])
+df.drop_duplicates(inplace=True)
+df = df.replace('', np.nan)
+df.dropna(inplace=True)
+print('len df third time', len(df))
 
 for col, file_text_dev, file_text_test, file_csv_cleaned in [('translation_output', file_en_text_dev, file_en_text_test, file_en_cleaned),
                                          ('text', file_zh_text_dev, file_zh_text_test, file_zh_cleaned)]:
