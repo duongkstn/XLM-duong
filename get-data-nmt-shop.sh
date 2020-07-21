@@ -12,7 +12,7 @@ set -e
 # Data preprocessing configuration
 #
 N_MONO=5000000  # number of monolingual sentences for each language
-CODES=60000     # number of BPE codes
+CODES=100000     # number of BPE codes
 N_THREADS=16    # number of threads in data preprocessing
 
 
@@ -94,8 +94,25 @@ REMOVE_DIACRITICS=$WMT16_SCRIPTS/preprocess/remove-diacritics.py
 # raw and tokenized files
 SRC_RAW=$MONO_PATH/$SRC/all.$SRC
 TGT_RAW=$MONO_PATH/$TGT/all.$TGT
+SRC_RAW_VALID=$MONO_PATH/$SRC/all.val.$SRC
+TGT_RAW_VALID=$MONO_PATH/$TGT/all.val.$TGT
+SRC_RAW_TEST=$MONO_PATH/$SRC/all.test.$SRC
+TGT_RAW_TEST=$MONO_PATH/$TGT/all.test.$TGT
+
 SRC_TOK=$SRC_RAW.tok
+SRC_TOK_VALID=$SRC_RAW_VALID.tok
+SRC_TOK_TEST=$SRC_RAW_TEST.tok
 TGT_TOK=$TGT_RAW.tok
+TGT_TOK_VALID=$TGT_RAW_VALID.tok
+TGT_TOK_TEST=$TGT_RAW_TEST.tok
+tail -20000 $SRC_RAW > $SRC_RAW_VALID
+tail -20000 $TGT_RAW > $TGT_RAW_VALID
+tail -20000 $SRC_RAW > $SRC_RAW_TEST
+tail -20000 $TGT_RAW > $TGT_RAW_TEST
+head -n $(( $(wc -l $SRC_RAW | awk '{print $1}') - 20000 )) $SRC_RAW > tmp.txt
+mv tmp.txt $SRC_RAW
+head -n $(( $(wc -l $TGT_RAW | awk '{print $1}') - 20000 )) $TGT_RAW > tmp.txt
+mv tmp.txt $TGT_RAW
 
 # BPE / vocab files
 BPE_CODES=$PROC_PATH/codes
@@ -151,13 +168,35 @@ if ! [[ -f "$SRC_TOK" ]]; then
   echo "Tokenize $SRC monolingual data..."
   eval "cat $SRC_RAW | $SRC_PREPROCESSING > $SRC_TOK"
 fi
+if ! [[ -f "$SRC_TOK_VALID" ]]; then
+  echo "Tokenize $SRC monolingual data..."
+  eval "cat $SRC_RAW_VALID | $SRC_PREPROCESSING > $SRC_TOK_VALID"
+fi
+if ! [[ -f "$SRC_TOK_TEST" ]]; then
+  echo "Tokenize $SRC monolingual data..."
+  eval "cat $SRC_RAW_TEST | $SRC_PREPROCESSING > $SRC_TOK_TEST"
+fi
 
 if ! [[ -f "$TGT_TOK" ]]; then
   echo "Tokenize $TGT monolingual data..."
   eval "cat $TGT_RAW | $TGT_PREPROCESSING > $TGT_TOK"
 fi
+if ! [[ -f "$TGT_TOK_VALID" ]]; then
+  echo "Tokenize $TGT monolingual data..."
+  eval "cat $TGT_RAW_VALID | $TGT_PREPROCESSING > $TGT_TOK_VALID"
+fi
+
+if ! [[ -f "$TGT_TOK_TEST" ]]; then
+  echo "Tokenize $TGT monolingual data..."
+  eval "cat $TGT_RAW_TEST | $TGT_PREPROCESSING > $TGT_TOK_TEST"
+fi
+
 echo "$SRC monolingual data tokenized in: $SRC_TOK"
 echo "$TGT monolingual data tokenized in: $TGT_TOK"
+echo "$SRC monolingual data tokenized in: $SRC_TOK_VALID"
+echo "$TGT monolingual data tokenized in: $TGT_TOK_VALID"
+echo "$SRC monolingual data tokenized in: $SRC_TOK_TEST"
+echo "$TGT monolingual data tokenized in: $TGT_TOK_TEST"
 
 # reload BPE codes
 cd $MAIN_PATH
@@ -184,6 +223,30 @@ if ! [[ -f "$TGT_TRAIN_BPE" ]]; then
 fi
 echo "BPE codes applied to $SRC in: $SRC_TRAIN_BPE"
 echo "BPE codes applied to $TGT in: $TGT_TRAIN_BPE"
+
+# apply BPE codes to validation
+if ! [[ -f "$SRC_VALID_BPE" ]]; then
+  echo "Applying $SRC BPE codes (valid)..."
+  $FASTBPE applybpe $SRC_VALID_BPE $SRC_TOK_VALID $BPE_CODES
+fi
+if ! [[ -f "$TGT_VALID_BPE" ]]; then
+  echo "Applying $TGT BPE codes (valid)..."
+  $FASTBPE applybpe $TGT_VALID_BPE $TGT_TOK_VALID $BPE_CODES
+fi
+echo "BPE codes applied to $SRC (valid) in: $SRC_VALID_BPE"
+echo "BPE codes applied to $TGT (valid) in: $TGT_VALID_BPE"
+
+# apply BPE codes to test
+if ! [[ -f "$SRC_TEST_BPE" ]]; then
+  echo "Applying $SRC BPE codes (test)..."
+  $FASTBPE applybpe $SRC_TEST_BPE $SRC_TOK_TEST $BPE_CODES
+fi
+if ! [[ -f "$TGT_TEST_BPE" ]]; then
+  echo "Applying $TGT BPE codes (test)..."
+  $FASTBPE applybpe $TGT_TEST_BPE $TGT_TOK_TEST $BPE_CODES
+fi
+echo "BPE codes applied to $SRC (test) in: $SRC_TEST_BPE"
+echo "BPE codes applied to $TGT (test) in: $TGT_TEST_BPE"
 
 # extract source and target vocabulary
 if ! [[ -f "$SRC_VOCAB" && -f "$TGT_VOCAB" ]]; then
@@ -220,6 +283,29 @@ fi
 echo "$SRC binarized data in: $SRC_TRAIN_BPE.pth"
 echo "$TGT binarized data in: $TGT_TRAIN_BPE.pth"
 
+# binarize data (valid)
+if ! [[ -f "$SRC_VALID_BPE.pth" ]]; then
+  echo "Binarizing $SRC data (valid)..."
+  $MAIN_PATH/preprocess.py $FULL_VOCAB $SRC_VALID_BPE
+fi
+if ! [[ -f "$TGT_VALID_BPE.pth" ]]; then
+  echo "Binarizing $TGT data (valid)..."
+  $MAIN_PATH/preprocess.py $FULL_VOCAB $TGT_VALID_BPE
+fi
+echo "$SRC binarized data (valid) in: $SRC_VALID_BPE.pth"
+echo "$TGT binarized data (valid) in: $TGT_VALID_BPE.pth"
+
+# binarize data (test)
+if ! [[ -f "$SRC_TEST_BPE.pth" ]]; then
+  echo "Binarizing $SRC data (test)..."
+  $MAIN_PATH/preprocess.py $FULL_VOCAB $SRC_TEST_BPE
+fi
+if ! [[ -f "$TGT_TEST_BPE.pth" ]]; then
+  echo "Binarizing $TGT data (test)..."
+  $MAIN_PATH/preprocess.py $FULL_VOCAB $TGT_TEST_BPE
+fi
+echo "$SRC binarized data (test) in: $SRC_TEST_BPE.pth"
+echo "$TGT binarized data (test) in: $TGT_TEST_BPE.pth"
 
 #
 # Download parallel data (for evaluation only)
@@ -245,27 +331,27 @@ echo "$TGT binarized data in: $TGT_TRAIN_BPE.pth"
 #eval "$INPUT_FROM_SGM < $PARA_SRC_TEST.sgm  | $SRC_PREPROCESSING > $PARA_SRC_TEST"
 #eval "$INPUT_FROM_SGM < $PARA_TGT_TEST.sgm  | $TGT_PREPROCESSING > $PARA_TGT_TEST"
 #
-echo "Applying BPE to valid and test files..."
-$FASTBPE applybpe $PARA_SRC_VALID_BPE $PARA_SRC_VALID $BPE_CODES $SRC_VOCAB
-$FASTBPE applybpe $PARA_TGT_VALID_BPE $PARA_TGT_VALID $BPE_CODES $TGT_VOCAB
-$FASTBPE applybpe $PARA_SRC_TEST_BPE  $PARA_SRC_TEST  $BPE_CODES $SRC_VOCAB
-$FASTBPE applybpe $PARA_TGT_TEST_BPE  $PARA_TGT_TEST  $BPE_CODES $TGT_VOCAB
-#
-echo "Binarizing data..."
-rm -f $PARA_SRC_VALID_BPE.pth $PARA_TGT_VALID_BPE.pth $PARA_SRC_TEST_BPE.pth $PARA_TGT_TEST_BPE.pth
-$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_SRC_VALID_BPE
-$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_TGT_VALID_BPE
-$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_SRC_TEST_BPE
-$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_TGT_TEST_BPE
+#echo "Applying BPE to valid and test files..."
+#$FASTBPE applybpe $PARA_SRC_VALID_BPE $PARA_SRC_VALID $BPE_CODES $SRC_VOCAB
+#$FASTBPE applybpe $PARA_TGT_VALID_BPE $PARA_TGT_VALID $BPE_CODES $TGT_VOCAB
+#$FASTBPE applybpe $PARA_SRC_TEST_BPE  $PARA_SRC_TEST  $BPE_CODES $SRC_VOCAB
+#$FASTBPE applybpe $PARA_TGT_TEST_BPE  $PARA_TGT_TEST  $BPE_CODES $TGT_VOCAB
+##
+#echo "Binarizing data..."
+#rm -f $PARA_SRC_VALID_BPE.pth $PARA_TGT_VALID_BPE.pth $PARA_SRC_TEST_BPE.pth $PARA_TGT_TEST_BPE.pth
+#$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_SRC_VALID_BPE
+#$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_TGT_VALID_BPE
+#$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_SRC_TEST_BPE
+#$MAIN_PATH/preprocess.py $FULL_VOCAB $PARA_TGT_TEST_BPE
 #
 #
 ##
 ## Link monolingual validation and test data to parallel data
 ##
-ln -sf $PARA_SRC_VALID_BPE.pth $SRC_VALID_BPE.pth
-ln -sf $PARA_TGT_VALID_BPE.pth $TGT_VALID_BPE.pth
-ln -sf $PARA_SRC_TEST_BPE.pth  $SRC_TEST_BPE.pth
-ln -sf $PARA_TGT_TEST_BPE.pth  $TGT_TEST_BPE.pth
+#ln -sf $PARA_SRC_VALID_BPE.pth $SRC_VALID_BPE.pth
+#ln -sf $PARA_TGT_VALID_BPE.pth $TGT_VALID_BPE.pth
+#ln -sf $PARA_SRC_TEST_BPE.pth  $SRC_TEST_BPE.pth
+#ln -sf $PARA_TGT_TEST_BPE.pth  $TGT_TEST_BPE.pth
 #
 #
 ##
@@ -282,10 +368,10 @@ echo "    $TGT: $TGT_VALID_BPE.pth"
 echo "Monolingual test data:"
 echo "    $SRC: $SRC_TEST_BPE.pth"
 echo "    $TGT: $TGT_TEST_BPE.pth"
-echo "Parallel validation data:"
-echo "    $SRC: $PARA_SRC_VALID_BPE.pth"
-echo "    $TGT: $PARA_TGT_VALID_BPE.pth"
-echo "Parallel test data:"
-echo "    $SRC: $PARA_SRC_TEST_BPE.pth"
-echo "    $TGT: $PARA_TGT_TEST_BPE.pth"
-echo ""
+#echo "Parallel validation data:"
+#echo "    $SRC: $PARA_SRC_VALID_BPE.pth"
+#echo "    $TGT: $PARA_TGT_VALID_BPE.pth"
+#echo "Parallel test data:"
+#echo "    $SRC: $PARA_SRC_TEST_BPE.pth"
+#echo "    $TGT: $PARA_TGT_TEST_BPE.pth"
+#echo ""

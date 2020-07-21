@@ -40,6 +40,7 @@ def clean(x, lg):
     x = remove_emoji(x).replace('\\n', ' ')
     if lg == 'zh':
         x = ''.join(x for x in jieba.cut(x, cut_all=False))
+        x = ' '.join(list([x[0] for x in jieba.tokenize(x)]))
         x = re.sub(r'[a-z0-9]', ' ', x) #remove all en words
     x = ''.join([t if (t.isalpha() or t.isdigit() or t == ' ') else ' ' for t in x])
     x = ''.join([t if (ord(t) not in square_character) else ' ' for t in x])

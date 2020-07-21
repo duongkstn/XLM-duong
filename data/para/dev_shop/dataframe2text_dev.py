@@ -41,6 +41,7 @@ def clean(x, lg):
     x = remove_emoji(x).replace('\\n', ' ')
     if lg == 'zh':
         x = ''.join(x for x in jieba.cut(x, cut_all=False))
+        x = ' '.join(list([x[0] for x in jieba.tokenize(x)]))
         x = re.sub(r'[0-9]', ' ', x)  # remove all en words, do not delete a-z words since they will be deleted later
     x = ''.join([t if (t.isalpha() or t.isdigit() or t == ' ') else ' ' for t in x])
     x = ''.join([t if (ord(t) not in square_character) else ' ' for t in x])
@@ -100,10 +101,10 @@ for col, file_text_dev, file_text_test, file_csv_cleaned in [('translation_outpu
                                          ('text', file_zh_text_dev, file_zh_text_test, file_zh_cleaned)]:
     l = df[col].values.tolist()
     with open(file_text_dev, 'w') as f:
-        for line in l[:800]:
+        for line in l[:700]:
             f.write(line + '\n')
     with open(file_text_test, 'w') as f:
-        for line in l[800:]:
+        for line in l[700:]:
             f.write(line + '\n')
 
     df[[col]].to_csv(file_csv_cleaned, index=False)
