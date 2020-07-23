@@ -267,8 +267,8 @@ def main(params):
                 trainer.mlm_step(lang1, lang2, params.lambda_mlm)
 
             # parallel classification steps
-            for lang1, lang2 in shuf_order(params.pc_steps, params):
-                trainer.pc_step(lang1, lang2, params.lambda_pc)
+            # for lang1, lang2 in shuf_order(params.pc_steps, params):
+            #     trainer.pc_step(lang1, lang2, params.lambda_pc)
 
             # denoising auto-encoder steps
             for lang in shuf_order(params.ae_steps):
@@ -279,8 +279,8 @@ def main(params):
                 trainer.mt_step(lang1, lang2, params.lambda_mt)
 
             # back-translation steps
-            # for lang1, lang2, lang3 in shuf_order(params.bt_steps):
-            #     trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
+            for lang1, lang2, lang3 in shuf_order(params.bt_steps):
+                trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
 
             trainer.iter()
 
